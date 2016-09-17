@@ -181,6 +181,7 @@ void MultiBoxLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   num_matches_ = 0;
   int num_negs = 0;
   for (int i = 0; i < num_; ++i) {
+    //match_indices is a map from predicted label to an int array of gt label
     map<int, vector<int> > match_indices;
     vector<int> neg_indices;
     // Check if there is ground truth for current image.

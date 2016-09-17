@@ -277,12 +277,12 @@ clip = True
 
 # Solver parameters.
 # Defining which GPUs to use.
-gpus = "0,1,2,3"
+gpus = "0"
 gpulist = gpus.split(",")
 num_gpus = len(gpulist)
 
 # Divide the mini-batch to different GPUs.
-batch_size = 32
+batch_size = 4
 accum_batch_size = 32
 iter_size = accum_batch_size / batch_size
 solver_mode = P.Solver.CPU
@@ -318,7 +318,7 @@ solver_param = {
     'momentum': 0.9,
     'iter_size': iter_size,
     'max_iter': 60000,
-    'snapshot': 40000,
+    'snapshot': 4000,
     'display': 10,
     'average_loss': 10,
     'type': "SGD",
@@ -328,7 +328,7 @@ solver_param = {
     'snapshot_after_train': True,
     # Test parameters
     'test_iter': [test_iter],
-    'test_interval': 10000,
+    'test_interval': 1000,
     'eval_type': "detection",
     'ap_version': "11point",
     'test_initialization': False,

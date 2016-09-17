@@ -87,14 +87,16 @@ void PriorBoxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   Dtype* top_data = top[0]->mutable_cpu_data();
   int dim = layer_height * layer_width * num_priors_ * 4;
   int idx = 0;
+  //size of the input layer determines the size of the grid
   for (int h = 0; h < layer_height; ++h) {
     for (int w = 0; w < layer_width; ++w) {
+      //the center x-coordinate is in img_width scale
       float center_x = (w + 0.5) * step_x;
       float center_y = (h + 0.5) * step_y;
       float box_width, box_height;
       // first prior: aspect_ratio = 1, size = min_size
       box_width = box_height = min_size_;
-      // xmin
+      // xmin, [0,1] range, normalized by img_width
       top_data[idx++] = (center_x - box_width / 2.) / img_width;
       // ymin
       top_data[idx++] = (center_y - box_height / 2.) / img_height;
