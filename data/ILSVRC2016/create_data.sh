@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 cur_dir=$(cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
 root_dir=$cur_dir/../..
 

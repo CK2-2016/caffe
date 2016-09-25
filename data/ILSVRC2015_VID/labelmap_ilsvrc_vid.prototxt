@@ -1,0 +1,155 @@
+item {
+  name: "none_of_the_above"
+  label: 0
+  display_name: "background"
+}
+item {
+  name: "n02691156"
+  label: 1
+  display_name: "airplane"
+}
+item {
+  name: "n02419796"
+  label: 2
+  display_name: "antelope"
+}
+item {
+  name: "n02131653"
+  label: 3
+  display_name: "bear"
+}
+item {
+  name: "n02834778"
+  label: 4
+  display_name: "bicycle"
+}
+item {
+  name: "n01503061"
+  label: 5
+  display_name: "bird"
+}
+item {
+  name: "n02924116"
+  label: 6
+  display_name: "bus"
+}
+item {
+  name: "n02958343"
+  label: 7
+  display_name: "car"
+}
+item {
+  name: "n02402425"
+  label: 8
+  display_name: "cattle"
+}
+item {
+  name: "n02084071"
+  label: 9
+  display_name: "dog"
+}
+item {
+  name: "n02121808"
+  label: 10
+  display_name: "domestic_cat"
+}
+item {
+  name: "n02503517"
+  label: 11
+  display_name: "elephant"
+}
+item {
+  name: "n02118333"
+  label: 12
+  display_name: "fox"
+}
+item {
+  name: "n02510455"
+  label: 13
+  display_name: "giant_panda"
+}
+item {
+  name: "n02342885"
+  label: 14
+  display_name: "hamster"
+}
+item {
+  name: "n02374451"
+  label: 15
+  display_name: "horse"
+}
+item {
+  name: "n02129165"
+  label: 16
+  display_name: "lion"
+}
+item {
+  name: "n01674464"
+  label: 17
+  display_name: "lizard"
+}
+item {
+  name: "n02484322"
+  label: 18
+  display_name: "monkey"
+}
+item {
+  name: "n03790512"
+  label: 19
+  display_name: "motorcycle"
+}
+item {
+  name: "n02324045"
+  label: 20
+  display_name: "rabbit"
+}
+item {
+  name: "n02509815"
+  label: 21
+  display_name: "red_panda"
+}
+item {
+  name: "n02411705"
+  label: 22
+  display_name: "sheep"
+}
+item {
+  name: "n01726692"
+  label: 23
+  display_name: "snake"
+}
+item {
+  name: "n02355227"
+  label: 24
+  display_name: "squirrel"
+}
+item {
+  name: "n02129604"
+  label: 25
+  display_name: "tiger"
+}
+item {
+  name: "n04468005"
+  label: 26
+  display_name: "train"
+}
+item {
+  name: "n01662784"
+  label: 27
+  display_name: "turtle"
+}
+item {
+  name: "n04530566"
+  label: 28
+  display_name: "watercraft"
+}
+item {
+  name: "n02062744"
+  label: 29
+  display_name: "whale"
+}
+item {
+  name: "n02391049"
+  label: 30
+  display_name: "zebra"
+}
