@@ -261,6 +261,9 @@ void EncodeBBox(
   }
 }
 
+/**
+ * decode bbox using loc regression output and priorbox information as reference
+ */
 void DecodeBBox(
     const NormalizedBBox& prior_bbox, const vector<float>& prior_variance,
     const CodeType code_type, const bool variance_encoded_in_target,
@@ -409,11 +412,13 @@ void MatchBBox(const vector<NormalizedBBox>& gt_bboxes,
   }
 
   // Store the positive overlap between predictions and ground truth.
+  // looks like a sparse matrix
   map<int, map<int, float> > overlaps;
   for (int i = 0; i < num_pred; ++i) {
     for (int j = 0; j < num_gt; ++j) {
       float overlap = JaccardOverlap(pred_bboxes[i], gt_bboxes[gt_indices[j]]);
       if (overlap > 1e-6) {
+        //update the match overlaps now
         (*match_overlaps)[i] = std::max((*match_overlaps)[i], overlap);
         overlaps[i][j] = overlap;
       }
@@ -599,9 +604,13 @@ void GetLocPredictions(const Dtype* loc_data, const int num,
   }
   loc_preds->resize(num);
   for (int i = 0; i < num; ++i) {
+    //label_bbox is a map<int, vector<bbox>>
     LabelBBox& label_bbox = (*loc_preds)[i];
+    //for every prediction
     for (int p = 0; p < num_preds_per_class; ++p) {
       int start_idx = p * num_loc_classes * 4;
+      //for every loc classes
+      //when loc share is on, num_loc_classes is 1
       for (int c = 0; c < num_loc_classes; ++c) {
         int label = share_location ? -1 : c;
         if (label_bbox.find(label) == label_bbox.end()) {

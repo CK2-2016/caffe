@@ -85,7 +85,7 @@ class MultiBoxLossLayer : public LossLayer<Dtype> {
   bool do_neg_mining_;
   float neg_pos_ratio_;
   float neg_overlap_;
-  CodeType code_type_;
+  CodeType code_type_; //center_size
   bool encode_variance_in_target_;
   bool map_object_to_agnostic_;
 

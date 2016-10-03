@@ -166,11 +166,13 @@ void MultiBoxLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   GetPriorBBoxes(prior_data, num_priors_, &prior_bboxes, &prior_variances);
 
   // Retrieve all predictions.
+  // a vector of map<int, vector<bbox>>, map from label to its bboxes
+  // label is always -1 with default ssd scripts
   vector<LabelBBox> all_loc_preds;
   GetLocPredictions(loc_data, num_, num_priors_, loc_classes_, share_location_,
                     &all_loc_preds);
 
-  // Retrieve max scores for each prior. Used in negative mining.
+  // Retrieve max scores for each regressed bbox. Used in negative mining.
   vector<vector<float> > all_max_scores;
   if (do_neg_mining_) {
     GetMaxConfidenceScores(conf_data, num_, num_priors_, num_classes_,
@@ -192,26 +194,41 @@ void MultiBoxLossLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       continue;
     }
     // Find match between predictions and ground truth.
+    // all gt_bboxes for current image
     const vector<NormalizedBBox>& gt_bboxes = all_gt_bboxes.find(i)->second;
+    // all overlap values for current image, indexed by WHAT?
     map<int, vector<float> > match_overlaps;
     if (!use_prior_for_matching_) {
+      //do not use prior for matching
+      //for every loc_class
       for (int c = 0; c < loc_classes_; ++c) {
+        //get the label. -1 with default ssd training scripts
         int label = share_location_ ? -1 : c;
         if (!share_location_ && label == background_label_id_) {
           // Ignore background loc predictions.
           continue;
         }
-        // Decode the prediction into bbox first.
+        // decode prior bboxes into loc bboxes
+        /**
+         * in-info: prior_bboxes, prior_variances, code_type_,
+         *          encode_variance_in_target_, all_loc_preds[i][label]
+         * out-info: loc bboxes
+         *
+         * this function essentially output the true coordinates of the loc
+         * regression output, using prior boxes as references since loc
+         * regression output are normalized to [0,1]
+         */
         vector<NormalizedBBox> loc_bboxes;
         DecodeBBoxes(prior_bboxes, prior_variances,
                      code_type_, encode_variance_in_target_,
                      all_loc_preds[i][label], &loc_bboxes);
+        //match bbox
         MatchBBox(gt_bboxes, loc_bboxes, label, match_type_,
                   overlap_threshold_, &match_indices[label],
                   &match_overlaps[label]);
       }
     } else {
-      // Use prior bboxes to match against all ground truth.
+      // Use prior bboxes to match directly against all ground truth.
       vector<int> temp_match_indices;
       vector<float> temp_match_overlaps;
       const int label = -1;

@@ -17,6 +17,8 @@ void PriorBoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   CHECK_GT(min_size_, 0) << "min_size must be positive.";
   max_size_ = -1;
   aspect_ratios_.clear();
+  //always push 1. into the aspect ratios array
+  //which means you shouldn't specify it in the aspect_ratios param
   aspect_ratios_.push_back(1.);
   flip_ = prior_box_param.flip();
   for (int i = 0; i < prior_box_param.aspect_ratio_size(); ++i) {
@@ -78,13 +80,17 @@ void PriorBoxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 template <typename Dtype>
 void PriorBoxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top) {
+  //width of feature map
   const int layer_width = bottom[0]->width();
   const int layer_height = bottom[0]->height();
+  //width of original image data
   const int img_width = bottom[1]->width();
   const int img_height = bottom[1]->height();
   const float step_x = static_cast<float>(img_width) / layer_width;
   const float step_y = static_cast<float>(img_height) / layer_height;
   Dtype* top_data = top[0]->mutable_cpu_data();
+  //number of pixels in the feature map * number of aspect ratios each pixel *
+  //4 values (xmin, ymin, yxmax, max)
   int dim = layer_height * layer_width * num_priors_ * 4;
   int idx = 0;
   //size of the input layer determines the size of the grid
