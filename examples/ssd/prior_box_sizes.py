@@ -47,6 +47,7 @@ project the receptive field of the given pixel (layer, x, y) down to input space
 def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
     '''first calculate the layer info. The only thing needed is blob size'''
     layers = calcRF(netDef, inputSize)
+    boxes = []
     '''
     1. find the four corner pixel on the previous layer
     2. for each corner pixel, only find the one pixel on the same direction
@@ -55,8 +56,15 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
     while layerNo < 0:
         layerNo += len(layers)
     if layerNo == 0: #data layer
-        return [(x,y)]*4 #the four corner points are the same point as (x,y)
-    print 'layer={} receptiveField={} absoluteStride={} blob={} x={} y={}'.format(layers[layerNo][-1], layers[layerNo][0], layers[layerNo][1],layers[layerNo][2], x, y)
+        corners = [(x,y)]*4 #the four corner points are the same point as (x,y)
+        boxes.append({
+            'name': layers[layerNo][-1],
+            'receptiveField': layers[layerNo][0],
+            'absoluteStride': layers[layerNo][1],
+            'blobSize': layers[layerNo][2],
+            'corners': corners
+            })
+        return boxes, layers
 
     kernelSize, relativeStride, padding, dilation, name = netDef[layerNo-1] #This layer's kernel size info
     kernelSize = (kernelSize - 1) * dilation + 1
@@ -70,7 +78,13 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
         (0-padding+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #left bottom corner
         ], blobSize)
     layerNo -= 1
-    print 'layer={} receptiveField={} absoluteStride={} blob={} corners={}'.format(layers[layerNo][-1], layers[layerNo][0], layers[layerNo][1],layers[layerNo][2],corners)
+    boxes.append({
+        'name': layers[layerNo][-1],
+        'receptiveField': layers[layerNo][0],
+        'absoluteStride': layers[layerNo][1],
+        'blobSize': layers[layerNo][2],
+        'corners': corners
+        })
 
     while layerNo > 0:
         '''propagate the corners down until we come to layerNo 0'''
@@ -84,9 +98,16 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
             (0-padding+corners[3][0]*relativeStride, 0-padding+kernelSize-1+corners[3][1]*relativeStride), #left bottom corner
             ], blobSize)
         layerNo -= 1
-        print 'layer={} receptiveField={} absoluteStride={} blob={} corners={}'.format(layers[layerNo][-1], layers[layerNo][0], layers[layerNo][1],layers[layerNo][2],corners)
+        boxes.append({
+            'name': layers[layerNo][-1],
+            'receptiveField': layers[layerNo][0],
+            'absoluteStride': layers[layerNo][1],
+            'blobSize': layers[layerNo][2],
+            'corners': corners
+            })
 
-    return corners
+    boxes.reverse() #reverse the order so that the data layer is at the smallest index
+    return boxes, layers
 
 def rectify(box, blobSize):
     return [tuple(min(blobSize-1, max(val, 0)) for val in point) for point in box]
@@ -98,4 +119,6 @@ if __name__ == '__main__':
     layerNo = -5
     x = 0
     y = 0
-    print ("layerNo={} x={} y={} four corners: {}".format(layerNo, x, y, projectRF(layerNo, x, y)))
+    boxes, layers = projectRF(layerNo, x, y)
+    for idx, box in enumerate(boxes):
+        print 'layer={} receptiveField={} absoluteStride={} blob={} corners={}'.format(box['name'], box['receptiveField'], box['absoluteStride'], box['blobSize'], box['corners'])
