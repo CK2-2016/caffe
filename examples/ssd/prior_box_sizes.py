@@ -43,6 +43,9 @@ def calcRF(netDef=VGGDef, inputSize=300):
 
 '''
 project the receptive field of the given pixel (layer, x, y) down to input space
+
+layerNo is in the scale of number of feature maps, which is 1 larger than number
+of kernels.
 '''
 def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
     '''first calculate the layer info. The only thing needed is blob size'''
@@ -77,7 +80,6 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
         (0-padding+kernelSize-1+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #right bottom corner
         (0-padding+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #left bottom corner
         ], blobSize)
-    layerNo -= 1
     boxes.append({
         'name': layers[layerNo][-1],
         'receptiveField': layers[layerNo][0],
@@ -85,6 +87,7 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
         'blobSize': layers[layerNo][2],
         'corners': corners
         })
+    layerNo -= 1
 
     while layerNo > 0:
         '''propagate the corners down until we come to layerNo 0'''
@@ -97,7 +100,6 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
             (0-padding+kernelSize-1+corners[2][0]*relativeStride, 0-padding+kernelSize-1+corners[2][1]*relativeStride), #right bottom corner
             (0-padding+corners[3][0]*relativeStride, 0-padding+kernelSize-1+corners[3][1]*relativeStride), #left bottom corner
             ], blobSize)
-        layerNo -= 1
         boxes.append({
             'name': layers[layerNo][-1],
             'receptiveField': layers[layerNo][0],
@@ -105,6 +107,7 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
             'blobSize': layers[layerNo][2],
             'corners': corners
             })
+        layerNo -= 1
 
     boxes.reverse() #reverse the order so that the data layer is at the smallest index
     return boxes, layers
