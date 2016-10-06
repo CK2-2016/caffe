@@ -35,7 +35,7 @@ def calcRF(netDef=VGGDef, inputSize=300):
     output = [[r,s,inputSize,'data']]
     for layer in netDef:
         k, rs, p, d, name = layer #kernel size and relative stride
-        r = r + (k - 1) * s # r_i = r_i-1 + (k_i - 1) * s_i-1
+        r = r + d * (k - 1) * s # r_i = r_i-1 + (k_i - 1) * s_i-1
         s = s * rs # s_i = s_i-1 * rs_i
         inputSize = (inputSize - (d * (k - 1) + 1) + 2*p)/rs + 1
         output.append([r, s, inputSize, name])
@@ -58,28 +58,8 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
     '''
     while layerNo < 0:
         layerNo += len(layers)
-    if layerNo == 0: #data layer
-        corners = [(x,y)]*4 #the four corner points are the same point as (x,y)
-        boxes.append({
-            'name': layers[layerNo][-1],
-            'receptiveField': layers[layerNo][0],
-            'absoluteStride': layers[layerNo][1],
-            'blobSize': layers[layerNo][2],
-            'corners': corners
-            })
-        return boxes, layers
-
-    kernelSize, relativeStride, padding, dilation, name = netDef[layerNo-1] #This layer's kernel size info
-    kernelSize = (kernelSize - 1) * dilation + 1
-    blobSize = layers[layerNo-1][2] #previous layer's blobSize
-    if x < 0 or x >= blobSize or y < 0 or y >= blobSize:
-        raise Exception('x,y range illegal: {}'.format((x,y)))
-    corners = rectify([
-        (0-padding+x*relativeStride, 0-padding+y*relativeStride), #left top corner
-        (0-padding+kernelSize-1+x*relativeStride, 0-padding+y*relativeStride), #right top corner
-        (0-padding+kernelSize-1+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #right bottom corner
-        (0-padding+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #left bottom corner
-        ], blobSize)
+    #current layer
+    corners = [(x,y)]*4 #the four corner points are the same point as (x,y)
     boxes.append({
         'name': layers[layerNo][-1],
         'receptiveField': layers[layerNo][0],
@@ -87,24 +67,44 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
         'blobSize': layers[layerNo][2],
         'corners': corners
         })
+
+    '''project the first layer, generate the first four corner points'''
+    kernelSize, relativeStride, padding, dilation, name = netDef[layerNo-1] #This layer's kernel size info
+    kernelSize = (kernelSize - 1) * dilation + 1
+    prevBlobSize = layers[layerNo-1][2] #previous layer's blobSize, used to constrain coordinates
+    if x < 0 or x >= prevBlobSize or y < 0 or y >= prevBlobSize:
+        raise Exception('x,y range illegal: {}'.format((x,y)))
+    corners = rectify([
+        (0-padding+x*relativeStride, 0-padding+y*relativeStride), #left top corner
+        (0-padding+kernelSize-1+x*relativeStride, 0-padding+y*relativeStride), #right top corner
+        (0-padding+kernelSize-1+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #right bottom corner
+        (0-padding+x*relativeStride, 0-padding+kernelSize-1+y*relativeStride), #left bottom corner
+        ], prevBlobSize)
+    boxes.append({
+        'name': layers[layerNo-1][-1], #name of feature map, as marked by outputing kernel name
+        'receptiveField': layers[layerNo-1][0], #receptive field size of feature map
+        'absoluteStride': layers[layerNo-1][1], #absolute stride size of feature map
+        'blobSize': layers[layerNo-1][2], #blobSize of THIS feature map
+        'corners': corners
+        })
     layerNo -= 1
 
+    '''now propagate the corners down to the input layer'''
     while layerNo > 0:
-        '''propagate the corners down until we come to layerNo 0'''
         kernelSize, relativeStride, padding, dilation, name = netDef[layerNo-1]
         kernelSize = (kernelSize - 1) * dilation + 1
-        blobSize = layers[layerNo-1][2]
+        prevBlobSize = layers[layerNo-1][2]
         corners = rectify([
             (0-padding+corners[0][0]*relativeStride, 0-padding+corners[0][1]*relativeStride), #left top corner
             (0-padding+kernelSize-1+corners[1][0]*relativeStride, 0-padding+corners[1][1]*relativeStride), #right top corner
             (0-padding+kernelSize-1+corners[2][0]*relativeStride, 0-padding+kernelSize-1+corners[2][1]*relativeStride), #right bottom corner
             (0-padding+corners[3][0]*relativeStride, 0-padding+kernelSize-1+corners[3][1]*relativeStride), #left bottom corner
-            ], blobSize)
+            ], prevBlobSize)
         boxes.append({
-            'name': layers[layerNo][-1],
-            'receptiveField': layers[layerNo][0],
-            'absoluteStride': layers[layerNo][1],
-            'blobSize': layers[layerNo][2],
+            'name': layers[layerNo-1][-1],
+            'receptiveField': layers[layerNo-1][0],
+            'absoluteStride': layers[layerNo-1][1],
+            'blobSize': layers[layerNo-1][2],
             'corners': corners
             })
         layerNo -= 1
@@ -119,9 +119,9 @@ if __name__ == '__main__':
     #for row in calcRF():
     #    print("layer {}, receptive field {}, absolute stride {}, output blob width {}".format(row[-1],row[0],row[1],row[2]))
 
-    layerNo = -5
-    x = 0
-    y = 0
+    layerNo = -10
+    x = 9
+    y = 9
     boxes, layers = projectRF(layerNo, x, y)
     for idx, box in enumerate(boxes):
         print 'layer={} receptiveField={} absoluteStride={} blob={} corners={}'.format(box['name'], box['receptiveField'], box['absoluteStride'], box['blobSize'], box['corners'])
