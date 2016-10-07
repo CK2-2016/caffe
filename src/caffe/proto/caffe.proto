@@ -1304,6 +1304,7 @@ message PriorBoxParameter {
   optional float min_size = 1;
   // Maximum box size (in pixels). Required!
   optional float max_size = 2;
+  repeated Box receptive_fields = 7;
   // Various of aspect ratios. Duplicate ratios will be ignored.
   // If none is provided, we use default ratio 1.
   repeated float aspect_ratio = 3;
@@ -1315,6 +1316,13 @@ message PriorBoxParameter {
   optional bool clip = 5 [default = true];
   // Variance for adjusting the prior bboxes.
   repeated float variance = 6;
+}
+
+message Box {
+  optional float xmin = 1;
+  optional float ymin = 2;
+  optional float xmax = 3;
+  optional float ymax = 4;
 }
 
 message PythonParameter {

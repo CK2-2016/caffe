@@ -18,7 +18,7 @@ VGGDef = [
         [3, 1, 1, 1, 'conv5_2'],
         [3, 1, 1, 1, 'conv5_3'],
         [3, 1, 1, 1, 'pool5'],
-        [3, 1, 6, 6, 'fc6'], #TODO: fix the absolute stride calculation to handle dilation
+        [3, 1, 6, 6, 'fc6'],
         [1, 1, 0, 1, 'fc7'],
         [1, 1, 0, 1, 'conv6_1'],
         [3, 2, 1, 1, 'conv6_2'],
@@ -27,6 +27,35 @@ VGGDef = [
         [1, 1, 0, 1, 'conv8_1'],
         [3, 2, 1, 1, 'conv8_2'],
         [3, 1, 0, 1, 'pool6'],
+        ]
+VGGNoDilationDef = [
+        [3, 1, 1, 1, 'conv1_1'],
+        [3, 1, 1, 1, 'conv1_2'],
+        [2, 2, 0, 1, 'pool1'],
+        [3, 1, 1, 1, 'conv2_1'],
+        [3, 1, 1, 1, 'conv2_2'],
+        [2, 2, 0, 1, 'pool2'],
+        [3, 1, 1, 1, 'conv3_1'],
+        [3, 1, 1, 1, 'conv3_2'],
+        [3, 1, 1, 1, 'conv3_3'],
+        [2, 2, 1, 1, 'pool3'],
+        [3, 1, 1, 1, 'conv4_1'],
+        [3, 1, 1, 1, 'conv4_2'],
+        [3, 1, 1, 1, 'conv4_3'],
+        [2, 2, 0, 1, 'pool4'],
+        [3, 1, 1, 1, 'conv5_1'],
+        [3, 1, 1, 1, 'conv5_2'],
+        [3, 1, 1, 1, 'conv5_3'],
+        [2, 2, 1, 1, 'pool5'],
+        [3, 1, 3, 3, 'fc6'],
+        [1, 1, 0, 1, 'fc7'],
+        [1, 1, 0, 1, 'conv6_1'],
+        [3, 2, 1, 1, 'conv6_2'],
+        [1, 1, 0, 1, 'conv7_1'],
+        [3, 2, 1, 1, 'conv7_2'],
+        [1, 1, 0, 1, 'conv8_1'],
+        [3, 2, 1, 1, 'conv8_2'],
+        [2, 1, 0, 1, 'pool6'],
         ]
 
 def calcRF(netDef=VGGDef, inputSize=300):
@@ -119,9 +148,9 @@ if __name__ == '__main__':
     #for row in calcRF():
     #    print("layer {}, receptive field {}, absolute stride {}, output blob width {}".format(row[-1],row[0],row[1],row[2]))
 
-    layerNo = -10
-    x = 9
-    y = 9
-    boxes, layers = projectRF(layerNo, x, y)
+    layerNo = -1
+    x = 0
+    y = 0
+    boxes, layers = projectRF(layerNo, x, y, netDef=VGGDef)
     for idx, box in enumerate(boxes):
         print 'layer={} receptiveField={} absoluteStride={} blob={} corners={}'.format(box['name'], box['receptiveField'], box['absoluteStride'], box['blobSize'], box['corners'])
