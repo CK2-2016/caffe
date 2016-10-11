@@ -1304,6 +1304,8 @@ message PriorBoxParameter {
   optional float min_size = 1;
   // Maximum box size (in pixels). Required!
   optional float max_size = 2;
+  // array of receptive field cordinates.
+  // items are ordered in row-major routine.
   repeated Box receptive_fields = 7;
   // Various of aspect ratios. Duplicate ratios will be ignored.
   // If none is provided, we use default ratio 1.

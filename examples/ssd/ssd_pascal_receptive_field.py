@@ -3,6 +3,8 @@ import caffe
 from caffe.model_libs import *
 from google.protobuf import text_format
 
+from prior_box_sizes import VGGDef, projectLayers
+
 import math
 import os
 import shutil
@@ -189,7 +191,7 @@ else:
     base_lr = 0.00004
 
 # Modify the job name if you want.
-job_name = "SSD_{}".format(resize)
+job_name = "SSD_{}_receptive_field".format(resize)
 # The name of the model. Modify it if you want.
 model_name = "VGG_VOC0712_{}".format(job_name)
 
@@ -258,6 +260,8 @@ min_dim = 300
 # conv8_2 ==> 3 x 3
 # pool6 ==> 1 x 1
 mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
+projected_receptive_fields = projectLayers(mbox_source_layers, netDef=VGGDef,
+        inputSize=resize_width)
 # in percent %
 min_ratio = 20
 max_ratio = 95
@@ -395,7 +399,9 @@ mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source
         use_batchnorm=use_batchnorm, min_sizes=min_sizes, max_sizes=max_sizes,
         aspect_ratios=aspect_ratios, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
-        prior_variance=prior_variance, kernel_size=3, pad=1)
+        prior_variance=prior_variance, kernel_size=3, pad=1,
+        receptive_fields=projected_receptive_fields)
+import pdb; pdb.set_trace()
 
 # Create the MultiBoxLossLayer.
 name = "mbox_loss"

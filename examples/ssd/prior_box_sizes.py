@@ -58,6 +58,9 @@ VGGNoDilationDef = [
         [2, 1, 0, 1, 'pool6'],
         ]
 
+'''
+calculate the receptivefield size, absolute stride size, blob size
+'''
 def calcRF(netDef=VGGDef, inputSize=300):
     r = 1 #receptive field
     s = 1 #absolute stride
@@ -76,9 +79,10 @@ project the receptive field of the given pixel (layer, x, y) down to input space
 layerNo is in the scale of number of feature maps, which is 1 larger than number
 of kernels.
 '''
-def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
+def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300, layers=None):
     '''first calculate the layer info. The only thing needed is blob size'''
-    layers = calcRF(netDef, inputSize)
+    if not layers:
+        layers = calcRF(netDef, inputSize)
     boxes = []
     '''
     1. find the four corner pixel on the previous layer
@@ -140,6 +144,34 @@ def projectRF(layerNo=0, x=0, y=0, netDef=VGGDef, inputSize=300):
 
     boxes.reverse() #reverse the order so that the data layer is at the smallest index
     return boxes, layers
+
+def projectLayers(layersToProject=['conv4_3', 'pool6'], netDef=VGGDef, inputSize=300):
+    '''first calculate the layer info. The only thing needed is blob size'''
+    layers = calcRF(netDef, inputSize)
+    '''put the layer informatin into a dictionary'''
+    layerDict = {}
+    for idx, layer in enumerate(layers):
+        layerDict[layer[-1]] = layer+[idx]
+
+    boxesByLayers = {}
+    for l in layersToProject:
+        receptiveField, absoluteStride, blobSize, name, idx = layerDict[l]
+        boxes = []
+        '''row-major order'''
+        for y in xrange(blobSize):
+            for x in xrange(blobSize):
+                ret, _ = projectRF(idx, x, y, netDef=VGGDef,
+                        inputSize=inputSize, layers=layers)
+                corners = ret[0]['corners']
+                xmin = corners[0][0]
+                ymin = corners[0][1]
+                xmax = corners[2][0]
+                ymax = corners[2][1]
+                boxes.append({'xmin':xmin, 'ymin':ymin, 'xmax':xmax, 'ymax':ymax})
+        boxesByLayers[l] = boxes
+
+    return boxesByLayers
+
 
 def rectify(box, blobSize):
     return [tuple(min(blobSize-1, max(val, 0)) for val in point) for point in box]
