@@ -258,8 +258,8 @@ min_dim = 300
 # conv7_2 ==> 5 x 5
 # conv8_2 ==> 3 x 3
 # pool6 ==> 1 x 1
-#mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
-mbox_source_layers = ['conv3_3','conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
+mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
+#mbox_source_layers = ['conv3_3','conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
 # in percent %
 min_ratio = 20
 max_ratio = 95
