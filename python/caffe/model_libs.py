@@ -732,6 +732,7 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
 
         # Create prior generation layer.
         name = "{}_mbox_priorbox".format(from_layer)
+        # if receptive_fields are provided
         if receptive_fields:
             if aspect_ratio:
                 net[name] = L.PriorBox(net[from_layer], net[data_layer], receptive_fields=receptive_fields[from_layers[i]],
