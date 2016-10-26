@@ -12,12 +12,12 @@ void PriorBoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   const PriorBoxParameter& prior_box_param =
       this->layer_param_.prior_box_param();
-  CHECK(prior_box_param.has_min_size() || prior_box_param.has_receptive_fields()) << "must provide min_size. or receptive_fields";
+  CHECK(prior_box_param.has_min_size() || prior_box_param.receptive_fields_size() > 0) << "must provide min_size. or receptive_fields";
   if (prior_box_param.has_min_size()) {
     min_size_ = prior_box_param.min_size();
     CHECK_GT(min_size_, 0) << "min_size must be positive.";
   }
-  if (prior_box_param.has_receptive_fields()) {
+  if (prior_box_param.receptive_fields_size() > 0) {
     const int layer_width = bottom[0]->width();
     const int layer_height = bottom[0]->height();
     CHECK_EQ(prior_box_param.receptive_fields_size(), layer_width * layer_height);
@@ -68,7 +68,7 @@ void PriorBoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
 
   //read and store the receptive_fields_
   for (int i = 0; i < prior_box_param.receptive_fields_size(); ++i) {
-    receptive_fields.push_back(prior_box_param.receptive_fields(i));
+    receptive_fields_.push_back(prior_box_param.receptive_fields(i));
   }
 }
 
