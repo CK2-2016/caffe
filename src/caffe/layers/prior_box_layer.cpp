@@ -20,8 +20,10 @@ void PriorBoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   if (prior_box_param.receptive_fields_size() > 0) {
     const int layer_width = bottom[0]->width();
     const int layer_height = bottom[0]->height();
-    CHECK_EQ(prior_box_param.receptive_fields_size(), layer_width * layer_height);
+    CHECK_EQ(prior_box_param.receptive_fields_size(), layer_width * layer_height
+            * prior_box_param.num_rf());
   }
+  num_rf_ = prior_box_param.num_rf();
   max_size_ = -1;
   aspect_ratios_.clear();
   //always push 1. into the aspect ratios array
@@ -50,6 +52,8 @@ void PriorBoxLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     CHECK_GT(max_size_, min_size_) << "max_size must be greater than min_size.";
     num_priors_ += 1;
   }
+  //multiply num_priors_ by the number of receptive fields per pixel
+  num_priors_ *= prior_box_param.num_rf();
   clip_ = prior_box_param.clip();
   if (prior_box_param.variance_size() > 1) {
     // Must and only provide 4 variance.
@@ -108,53 +112,18 @@ void PriorBoxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   //size of the input layer determines the size of the grid
   for (int h = 0; h < layer_height; ++h) {
     for (int w = 0; w < layer_width; ++w) {
-      //the center x-coordinate is in img_width scale
-      float center_x = (w + 0.5) * step_x;
-      float center_y = (h + 0.5) * step_y;
-      float box_width, box_height;
-      const int rfIndex = w + h * layer_width;
-      // first prior: aspect_ratio = 1, size = receptive_field size
-      if (min_size_ > 0) {
-        box_width = box_height = min_size_;
-        // xmin, [0,1] range, normalized by img_width
-        top_data[idx++] = (center_x - box_width / 2.) / img_width;
-        // ymin
-        top_data[idx++] = (center_y - box_height / 2.) / img_height;
-        // xmax
-        top_data[idx++] = (center_x + box_width / 2.) / img_width;
-        // ymax
-        top_data[idx++] = (center_y + box_height / 2.) / img_height;
-      } else {
-        top_data[idx++] = receptive_fields_[rfIndex].xmin() / img_width;
-        top_data[idx++] = receptive_fields_[rfIndex].ymin() / img_width;
-        top_data[idx++] = receptive_fields_[rfIndex].xmax() / img_width;
-        top_data[idx++] = receptive_fields_[rfIndex].ymax() / img_width;
-      }
+      for (int rf = 0; rf < num_rf_; ++rf) {
+        const int rfIndex = receptive_fields_.size()/num_rf_*rf+w+h*layer_width;
 
-      if (max_size_ > 0) {
-        // second prior: aspect_ratio = 1, size = sqrt(min_size * max_size)
-        box_width = box_height = sqrt(min_size_ * max_size_);
-        // xmin
-        top_data[idx++] = (center_x - box_width / 2.) / img_width;
-        // ymin
-        top_data[idx++] = (center_y - box_height / 2.) / img_height;
-        // xmax
-        top_data[idx++] = (center_x + box_width / 2.) / img_width;
-        // ymax
-        top_data[idx++] = (center_y + box_height / 2.) / img_height;
-      }
+        //these two are for backward compatibility
+        float center_x = (w + 0.5) * step_x;
+        float center_y = (h + 0.5) * step_y;
 
-      // rest of priors
-      for (int r = 0; r < aspect_ratios_.size(); ++r) {
-        float ar = aspect_ratios_[r];
-        if (fabs(ar - 1.) < 1e-6) {
-          continue;
-        }
+        float box_width, box_height;
+        // first prior: aspect_ratio = 1, size = receptive_field size
         if (min_size_ > 0) {
-          //use the old min_size scheme
-          box_width = min_size_ * sqrt(ar);
-          box_height = min_size_ / sqrt(ar);
-          // xmin
+          box_width = box_height = min_size_;
+          // xmin, [0,1] range, normalized by img_width
           top_data[idx++] = (center_x - box_width / 2.) / img_width;
           // ymin
           top_data[idx++] = (center_y - box_height / 2.) / img_height;
@@ -163,22 +132,62 @@ void PriorBoxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
           // ymax
           top_data[idx++] = (center_y + box_height / 2.) / img_height;
         } else {
-          //use the new receptive field scheme
-          box_width = receptive_fields_[rfIndex].xmax() - receptive_fields_[rfIndex].xmin();
-          box_height = receptive_fields_[rfIndex].ymax() - receptive_fields_[rfIndex].ymin();
-          if (ar > 1) {
-            box_height /= ar;
-          } else {
-            box_width /= ar;
+          top_data[idx++] = receptive_fields_[rfIndex].xmin() / img_width;
+          top_data[idx++] = receptive_fields_[rfIndex].ymin() / img_width;
+          top_data[idx++] = receptive_fields_[rfIndex].xmax() / img_width;
+          top_data[idx++] = receptive_fields_[rfIndex].ymax() / img_width;
+        }
+
+        if (max_size_ > 0) {
+          // second prior: aspect_ratio = 1, size = sqrt(min_size * max_size)
+          box_width = box_height = sqrt(min_size_ * max_size_);
+          // xmin
+          top_data[idx++] = (center_x - box_width / 2.) / img_width;
+          // ymin
+          top_data[idx++] = (center_y - box_height / 2.) / img_height;
+          // xmax
+          top_data[idx++] = (center_x + box_width / 2.) / img_width;
+          // ymax
+          top_data[idx++] = (center_y + box_height / 2.) / img_height;
+        }
+
+        // rest of priors
+        for (int r = 0; r < aspect_ratios_.size(); ++r) {
+          float ar = aspect_ratios_[r];
+          if (fabs(ar - 1.) < 1e-6) {
+            continue;
           }
-          top_data[idx++] = (receptive_fields_[rfIndex].xmax()+receptive_fields_[rfIndex].xmin() - box_width) / 2. / img_width;
-          top_data[idx++] = (receptive_fields_[rfIndex].ymax()+receptive_fields_[rfIndex].ymin() - box_height) / 2. / img_height;
-          top_data[idx++] = (receptive_fields_[rfIndex].xmax()+receptive_fields_[rfIndex].xmin() + box_width) / 2. / img_width;
-          top_data[idx++] = (receptive_fields_[rfIndex].ymax()+receptive_fields_[rfIndex].ymin() + box_height) / 2. / img_height;
+          if (min_size_ > 0) {
+            //use the old min_size scheme
+            box_width = min_size_ * sqrt(ar);
+            box_height = min_size_ / sqrt(ar);
+            // xmin
+            top_data[idx++] = (center_x - box_width / 2.) / img_width;
+            // ymin
+            top_data[idx++] = (center_y - box_height / 2.) / img_height;
+            // xmax
+            top_data[idx++] = (center_x + box_width / 2.) / img_width;
+            // ymax
+            top_data[idx++] = (center_y + box_height / 2.) / img_height;
+          } else {
+            //use the new receptive field scheme
+            box_width = receptive_fields_[rfIndex].xmax() - receptive_fields_[rfIndex].xmin();
+            box_height = receptive_fields_[rfIndex].ymax() - receptive_fields_[rfIndex].ymin();
+            if (ar > 1) {
+              box_height /= ar;
+            } else {
+              box_width *= ar;
+            }
+            top_data[idx++] = (receptive_fields_[rfIndex].xmax()+receptive_fields_[rfIndex].xmin() - box_width) / 2. / img_width;
+            top_data[idx++] = (receptive_fields_[rfIndex].ymax()+receptive_fields_[rfIndex].ymin() - box_height) / 2. / img_height;
+            top_data[idx++] = (receptive_fields_[rfIndex].xmax()+receptive_fields_[rfIndex].xmin() + box_width) / 2. / img_width;
+            top_data[idx++] = (receptive_fields_[rfIndex].ymax()+receptive_fields_[rfIndex].ymin() + box_height) / 2. / img_height;
+          }
         }
       }
     }
   }
+  
   // clip the prior's coordidate such that it is within [0, 1]
   if (clip_) {
     for (int d = 0; d < dim; ++d) {

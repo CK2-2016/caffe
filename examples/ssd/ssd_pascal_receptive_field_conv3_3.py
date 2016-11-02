@@ -191,7 +191,7 @@ else:
     base_lr = 0.00004
 
 # Modify the job name if you want.
-job_name = "SSD_{}_receptive_field".format(resize)
+job_name = "SSD_{}_receptive_field_conv3_3".format(resize)
 # The name of the model. Modify it if you want.
 model_name = "VGG_VOC0712_{}".format(job_name)
 
@@ -259,23 +259,23 @@ min_dim = 300
 # conv7_2 ==> 5 x 5
 # conv8_2 ==> 3 x 3
 # pool6 ==> 1 x 1
-mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
+mbox_source_layers = ['conv3_3', 'conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
 projected_receptive_fields = projectLayers(mbox_source_layers, netDef=VGGDef,
         inputSize=resize_width)
 # in percent %
-min_ratio = 20
-max_ratio = 95
-step = int(math.floor((max_ratio - min_ratio) / (len(mbox_source_layers) - 2)))
-min_sizes = []
-max_sizes = []
-for ratio in xrange(min_ratio, max_ratio + 1, step):
-  min_sizes.append(min_dim * ratio / 100.)
-  max_sizes.append(min_dim * (ratio + step) / 100.)
-min_sizes = [min_dim * 10 / 100.] + min_sizes
-max_sizes = [[]] + max_sizes
-aspect_ratios = [[2], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]]
+#min_ratio = 20
+#max_ratio = 95
+#step = int(math.floor((max_ratio - min_ratio) / (len(mbox_source_layers) - 2)))
+#min_sizes = []
+#max_sizes = []
+#for ratio in xrange(min_ratio, max_ratio + 1, step):
+#  min_sizes.append(min_dim * ratio / 100.)
+#  max_sizes.append(min_dim * (ratio + step) / 100.)
+#min_sizes = [min_dim * 10 / 100.] + min_sizes
+#max_sizes = [[]] + max_sizes
+aspect_ratios = [[2, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]]
 # L2 normalize conv4_3.
-normalizations = [20, -1, -1, -1, -1, -1]
+normalizations = [20, 20, -1, -1, -1, -1, -1]
 # variance used to encode/decode prior bboxes.
 if code_type == P.PriorBox.CENTER_SIZE:
   prior_variance = [0.1, 0.1, 0.2, 0.2]
@@ -291,7 +291,7 @@ gpulist = gpus.split(",")
 num_gpus = len(gpulist)
 
 # Divide the mini-batch to different GPUs.
-batch_size = 32
+batch_size = 16
 accum_batch_size = 32
 iter_size = accum_batch_size / batch_size
 solver_mode = P.Solver.CPU
@@ -330,7 +330,7 @@ solver_param = {
     'momentum': 0.9,
     'iter_size': iter_size,
     'max_iter': 60000,
-    'snapshot': 40000,
+    'snapshot': 10000,
     'display': 10,
     'average_loss': 10,
     'type': "SGD",
@@ -340,7 +340,7 @@ solver_param = {
     'snapshot_after_train': True,
     # Test parameters
     'test_iter': [test_iter],
-    'test_interval': 5000,
+    'test_interval': 10000,
     'eval_type': "detection",
     'ap_version': "11point",
     'test_initialization': False,
@@ -396,7 +396,7 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 AddExtraLayers(net, use_batchnorm)
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers,
-        use_batchnorm=use_batchnorm, min_sizes=min_sizes,
+        use_batchnorm=use_batchnorm,#min_sizes=min_sizes,
         aspect_ratios=aspect_ratios, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
         prior_variance=prior_variance, kernel_size=3, pad=1,
@@ -427,7 +427,7 @@ VGGNetBody(net, from_layer='data', fully_conv=True, reduced=True, dilated=True,
 AddExtraLayers(net, use_batchnorm)
 
 mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source_layers,
-        use_batchnorm=use_batchnorm, min_sizes=min_sizes,
+        use_batchnorm=use_batchnorm,#min_sizes=min_sizes,
         aspect_ratios=aspect_ratios, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
         prior_variance=prior_variance, kernel_size=3, pad=1,

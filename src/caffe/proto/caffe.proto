@@ -1307,6 +1307,10 @@ message PriorBoxParameter {
   // array of receptive field cordinates.
   // items are ordered in row-major routine.
   repeated Box receptive_fields = 7;
+  // number of receptive fields per pixel
+  // when multiple receptive field size are supplied, the lists are simply
+  // concatenated
+  optional uint32 num_rf = 8 [default = 1];
   // Various of aspect ratios. Duplicate ratios will be ignored.
   // If none is provided, we use default ratio 1.
   repeated float aspect_ratio = 3;

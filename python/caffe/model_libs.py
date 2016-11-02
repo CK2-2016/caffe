@@ -659,12 +659,15 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
         min_sizes=[], max_sizes=[], prior_variance = [0.1],
         aspect_ratios=[], share_location=True, flip=True, clip=True,
         inter_layer_depth=0, kernel_size=1, pad=0, conf_postfix='',
-        loc_postfix='', receptive_fields={}):
+        loc_postfix='', receptive_fields={}, num_rf={}):
     assert num_classes, "must provide num_classes"
     assert num_classes > 0, "num_classes must be positive number"
     if normalizations:
         assert len(from_layers) == len(normalizations), "from_layers and normalizations should have same length"
-    assert len(from_layers) == len(min_sizes), "from_layers and min_sizes should have same length"
+    if len(min_sizes):
+        assert len(from_layers) == len(min_sizes), "from_layers and min_sizes should have same length"
+    else:
+        assert len(from_layers) == len(receptive_fields), "from_layers and receptive_fields should have the same length"
     if max_sizes:
         assert len(from_layers) == len(max_sizes), "from_layers and max_sizes should have same length"
     net_layers = net.keys()
@@ -705,6 +708,7 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
             num_priors_per_location = 1 + len(aspect_ratio)
         if flip:
             num_priors_per_location += len(aspect_ratio)
+        num_priors_per_location *= num_rf[from_layers[i]]
 
         # Create location prediction layer.
         name = "{}_mbox_loc{}".format(from_layer, loc_postfix)
@@ -736,10 +740,13 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
         if receptive_fields:
             if aspect_ratio:
                 net[name] = L.PriorBox(net[from_layer], net[data_layer], receptive_fields=receptive_fields[from_layers[i]],
-                    aspect_ratio=aspect_ratio, flip=flip, clip=clip, variance=prior_variance)
+                    aspect_ratio=aspect_ratio, flip=flip, clip=clip,
+                    variance=prior_variance,
+                    num_rf=num_rf[from_layers[i]] if from_layers[i] in num_rf else 1)
             else:
                 net[name] = L.PriorBox(net[from_layer], net[data_layer], receptive_fields=receptive_fields[from_layers[i]],
-                    clip=clip, variance=prior_variance)
+                    clip=clip, variance=prior_variance,
+                    num_rf=num_rf[from_layers[i]] if from_layers[i] in num_rf else 1)
         elif max_sizes and max_sizes[i]:
             if aspect_ratio:
                 net[name] = L.PriorBox(net[from_layer], net[data_layer], min_size=min_sizes[i], max_size=max_sizes[i],

@@ -191,7 +191,7 @@ else:
     base_lr = 0.00004
 
 # Modify the job name if you want.
-job_name = "SSD_{}_receptive_field".format(resize)
+job_name = "SSD_{}_receptive_field_multiresolution".format(resize)
 # The name of the model. Modify it if you want.
 model_name = "VGG_VOC0712_{}".format(job_name)
 
@@ -260,8 +260,27 @@ min_dim = 300
 # conv8_2 ==> 3 x 3
 # pool6 ==> 1 x 1
 mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
-projected_receptive_fields = projectLayers(mbox_source_layers, netDef=VGGDef,
-        inputSize=resize_width)
+prior_box_mapping = {
+        'conv4_3': ['conv4_1', 'conv4_2', 'conv4_3'],
+        'fc7': ['pool4', 'conv5_1', 'conv5_2', 'conv5_3', 'pool5', 'fc7'],
+        'conv6_2': ['conv6_2'],
+        'conv7_2': ['conv7_2'],
+        'conv8_2': ['conv8_2'],
+        'pool6': ['pool6'],
+        }
+projected_receptive_fields = projectLayers(sum(prior_box_mapping.values(),[]),
+        netDef=VGGDef, inputSize=resize_width)
+#group them up
+new_projected_rf = {}
+num_rf = {}
+for key, val in prior_box_mapping.iteritems():
+    # concatenate all the rf that belongs to a layer into one giant array
+    rf = []
+    num_rf[key] = 0
+    for rfname in val:
+        rf += projected_receptive_fields[rfname]
+        num_rf[key] += 1
+    new_projected_rf[key] = rf
 # in percent %
 min_ratio = 20
 max_ratio = 95
@@ -340,7 +359,7 @@ solver_param = {
     'snapshot_after_train': True,
     # Test parameters
     'test_iter': [test_iter],
-    'test_interval': 5000,
+    'test_interval': 10000,
     'eval_type': "detection",
     'ap_version': "11point",
     'test_initialization': False,
@@ -400,7 +419,7 @@ mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source
         aspect_ratios=aspect_ratios, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
         prior_variance=prior_variance, kernel_size=3, pad=1,
-        receptive_fields=projected_receptive_fields)
+        receptive_fields=new_projected_rf, num_rf=num_rf)
 #import pdb; pdb.set_trace()
 
 # Create the MultiBoxLossLayer.
@@ -431,7 +450,7 @@ mbox_layers = CreateMultiBoxHead(net, data_layer='data', from_layers=mbox_source
         aspect_ratios=aspect_ratios, normalizations=normalizations,
         num_classes=num_classes, share_location=share_location, flip=flip, clip=clip,
         prior_variance=prior_variance, kernel_size=3, pad=1,
-        receptive_fields=projected_receptive_fields)
+        receptive_fields=new_projected_rf, num_rf=num_rf)
 
 conf_name = "mbox_conf"
 if multibox_loss_param["conf_loss_type"] == P.MultiBoxLoss.SOFTMAX:
