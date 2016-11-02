@@ -708,7 +708,8 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
             num_priors_per_location = 1 + len(aspect_ratio)
         if flip:
             num_priors_per_location += len(aspect_ratio)
-        num_priors_per_location *= num_rf[from_layers[i]]
+        if from_layers[i] in num_rf:
+            num_priors_per_location *= num_rf[from_layers[i]]
 
         # Create location prediction layer.
         name = "{}_mbox_loc{}".format(from_layer, loc_postfix)
