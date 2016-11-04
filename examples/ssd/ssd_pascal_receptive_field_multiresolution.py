@@ -191,7 +191,7 @@ else:
     base_lr = 0.00004
 
 # Modify the job name if you want.
-job_name = "SSD_{}_receptive_field_multiresolution".format(resize)
+job_name = "SSD_{}_receptive_field_multiresolution_pool3".format(resize)
 # The name of the model. Modify it if you want.
 model_name = "VGG_VOC0712_{}".format(job_name)
 
@@ -261,7 +261,7 @@ min_dim = 300
 # pool6 ==> 1 x 1
 mbox_source_layers = ['conv4_3', 'fc7', 'conv6_2', 'conv7_2', 'conv8_2', 'pool6']
 prior_box_mapping = {
-        'conv4_3': ['conv4_1', 'conv4_2', 'conv4_3'],
+        'conv4_3': ['pool3', 'conv4_1', 'conv4_2', 'conv4_3'],
         'fc7': ['pool4', 'conv5_1', 'conv5_2', 'conv5_3', 'pool5', 'fc7'],
         'conv6_2': ['conv6_2'],
         'conv7_2': ['conv7_2'],
@@ -292,7 +292,7 @@ for ratio in xrange(min_ratio, max_ratio + 1, step):
   max_sizes.append(min_dim * (ratio + step) / 100.)
 min_sizes = [min_dim * 10 / 100.] + min_sizes
 max_sizes = [[]] + max_sizes
-aspect_ratios = [[2], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]]
+aspect_ratios = [[2, 3, 4], [2, 3, 4], [2, 3, 4], [2, 3, 4], [2, 3, 4], [2, 3, 4]]
 # L2 normalize conv4_3.
 normalizations = [20, -1, -1, -1, -1, -1]
 # variance used to encode/decode prior bboxes.
