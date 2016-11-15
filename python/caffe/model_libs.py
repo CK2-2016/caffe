@@ -659,7 +659,7 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
         min_sizes=[], max_sizes=[], prior_variance = [0.1],
         aspect_ratios=[], share_location=True, flip=True, clip=True,
         inter_layer_depth=0, kernel_size=1, pad=0, conf_postfix='',
-        loc_postfix='', receptive_fields={}, num_rf={}):
+        loc_postfix='', receptive_fields={}, num_rf={}, local_fc={}):
     assert num_classes, "must provide num_classes"
     assert num_classes > 0, "num_classes must be positive number"
     if normalizations:
@@ -680,6 +680,16 @@ def CreateMultiBoxHead(net, data_layer="data", num_classes=[], from_layers=[],
     objectness_layers = []
     for i in range(0, num):
         from_layer = from_layers[i]
+
+        # add local_fc layers
+        if local_fc:
+            if from_layers[i] in local_fc:
+                for idx, channels in enumerate(local_fc[from_layers[i]]):
+                    fc_name = "{}_fc{}".format(from_layers[i], idx+1)
+                    ConvBNLayer(net, from_layer, fc_name, use_bn=use_batchnorm,
+                            use_relu=True, num_output=channels, kernel_size=1,
+                            pad=0, stride=1)
+                    from_layer = fc_name
 
         # Get the normalize value.
         if normalizations:
