@@ -189,7 +189,7 @@ else:
     base_lr = 0.00004
 
 # Modify the job name if you want.
-job_name = "SSD_{}_branch_conv3_3_fixed_size".format(resize)
+job_name = "SSD_{}_conv3_3".format(resize)
 # The name of the model. Modify it if you want.
 model_name = "VGG_VOC0712_{}".format(job_name)
 
@@ -275,7 +275,7 @@ aspect_ratios = [[2], [2], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]]
 # L2 normalize conv4_3.
 normalizations = [20, 20, -1, -1, -1, -1, -1]
 # local fc layers
-local_fc = {'conv3_3': [256, 256]}
+local_fc = {}
 # variance used to encode/decode prior bboxes.
 if code_type == P.PriorBox.CENTER_SIZE:
   prior_variance = [0.1, 0.1, 0.2, 0.2]
